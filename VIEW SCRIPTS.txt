@@ -1,0 +1,136 @@
+CREATE VIEW academic_staff_view (`Staff_ID`, `Name`, `Manager`, `Curriculum`, `Teaching_Level`, `Date_of _Birth`, `Street_Address`, `City`, `Postcode`, `Email`, `Telephone`, `Annual_Salary`, `Monthly_Salary`, `Total_Pay`)
+AS
+SELECT s.staff_id, CONCAT(s.staff_forename, " ", s.staff_surname) AS staff_name, 
+	   CONCAT(m.manager_forename, " ", m.manager_surname, " (", m.manager_id, ")") AS manager_name, 
+	   c.curriculum_title, ac.teaching_level, s.staff_dob, s.staff_street_address, s.staff_city, s.staff_postcode, 
+       s.staff_email, s.staff_tele, s.staff_salary_annum, s.staff_salary_month, s.staff_total_pay_td
+FROM staff s INNER JOIN manager m 
+ON s.manager_id = m.manager_id
+INNER JOIN academic_staff ac
+ON s.staff_id = ac.ac_staff_id
+LEFT JOIN curriculum c 
+ON ac.ac_staff_id = c.curriculum_leader_id
+ORDER BY s.staff_id ASC;
+
+
+
+CREATE VIEW support_staff_view (`Staff_ID`, `Name`, `Manager`, `Department`, `Date_of _Birth`, `Street_Address`, `City`, `Postcode`, `Email`, `Telephone`, `Annual_Salary`, `Monthly_Salary`, `Total_Pay`)
+AS
+SELECT s.staff_id, CONCAT(s.staff_forename, " ", s.staff_surname) AS staff_name, 
+	   CONCAT(m.manager_forename, " ", m.manager_surname, " (", m.manager_id, ")") AS manager_name, 
+	   d.department_title, s.staff_dob, s.staff_street_address, s.staff_city, s.staff_postcode, 
+       s.staff_email, s.staff_tele, s.staff_salary_annum, s.staff_salary_month, s.staff_total_pay_td
+FROM staff s INNER JOIN manager m
+ON s.manager_id = m.manager_id
+INNER JOIN non_academic_staff n 
+ON s.staff_id = n.nonac_staff_id
+INNER JOIN department d
+ON d.department_id = n.department_id
+GROUP BY 
+ORDER BY s.staff_id ASC;
+
+CREATE VIEW skill_set_view (`Staff_ID`, `Name`, `Skill`, `Skill_Value`)
+AS
+SELECT s.staff_id, CONCAT(s.staff_forename, " ", s.staff_surname) AS staff_name, sk.skill_title, sk.skill_value
+FROM staff s INNER JOIN non_academic_staff na
+ON s.staff_id = na.nonac_staff_id
+INNER JOIN skills_held h
+ON na.nonac_staff_id = h.nonac_staff_id
+INNER JOIN skill sk
+ON sk.skill_id = h.skill_id
+ORDER BY staff_name ASC;
+
+DROP VIEW full_time_student_view;
+DROP VIEW international_student_view;
+DROP VIEW distance_student_view;
+DROP VIEW distance_student_international_view;
+
+CREATE VIEW full_time_student_view (`Student_ID`, `Name`, `Code`, `Curriculum`, `Date_Of_Birth`, `Street_Address`, `City`, `Postcode`, `Loan_Type`, `Loan_Amount`, `Fees_Paid_TD`, `Locker`)
+AS
+SELECT s.student_id, CONCAT(s.student_forename, " ", s.student_surname) AS student_name, s.student_code, c.curriculum_title, s.student_dob, s.student_address,
+	   s.student_city, s.student_postcode, l.loan_type, l.loan_amount, s.student_fee_paid_td, lk.locker_id
+FROM student s INNER JOIN curriculum c
+ON s.curriculum_id = c.curriculum_id
+INNER JOIN loan l 
+ON l.loan_id = s.loan_id
+INNER JOIN locker_possession lk
+ON s.student_id = lk.owner_id
+ORDER BY s.student_id ASC;
+
+CREATE VIEW international_student_view (`Student_ID`, `Name`, `Code`, `Curriculum`, `Date_Of_Birth`, `Street_Address`, `City`, `Postcode`, `Loan_Type`, `Loan_Amount`, `Fees_Paid_TD`, `Country`, `Visa`, `Passport_No`)
+AS
+SELECT s.student_id, CONCAT(s.student_forename, " ", s.student_surname) AS student_name, s.student_code, c.curriculum_title, s.student_dob, s.student_address,
+	   s.student_city, s.student_postcode, l.loan_type, l.loan_amount, s.student_fee_paid_td, i.int_student_country, 
+       i.int_student_visa, i.int_student_passport_no
+FROM student s INNER JOIN curriculum c
+ON s.curriculum_id = c.curriculum_id 
+INNER JOIN loan l 
+ON l.loan_id = s.loan_id
+INNER JOIN international_student i
+ON i.int_student_id = s.student_id
+ORDER BY s.student_id ASC;
+
+
+CREATE VIEW distance_student_view (`Student_ID`, `Name`, `Code`, `Curriculum`, `Date_Of_Birth`, `Street_Address`, `City`, `Postcode`, `Loan_Type`, `Loan_Amount`, `Fees_Paid_TD`, `Academic_Tutor`, `Pastoral_Tutor`)
+AS
+SELECT s.student_id, CONCAT(s.student_forename, " ", s.student_surname) AS student_name, s.student_code, c.curriculum_title, s.student_dob, s.student_address,
+	   s.student_city, s.student_postcode, l.loan_type, l.loan_amount, s.student_fee_paid_td, 
+       CONCAT(sta.staff_forename, " ", sta.staff_surname, "(", d.academic_tutor_id, ")") AS academic_tutor_name,
+       CONCAT(stna.staff_forename, " ", stna.staff_surname, "(", d.pastoral_tutor_id, ")") AS pastoral_tutor_name
+FROM student s INNER JOIN curriculum c
+ON s.curriculum_id = c.curriculum_id
+INNER JOIN loan l 
+ON l.loan_id = s.loan_id
+INNER JOIN distance_student d
+ON d.dist_student_id = s.student_id
+INNER JOIN academic_staff a
+ON a.ac_staff_id = d.academic_tutor_id
+INNER JOIN non_academic_staff na
+ON na.nonac_staff_id = d.pastoral_tutor_id
+INNER JOIN staff sta
+ON sta.staff_id = a.ac_staff_id 
+INNER JOIN staff stna
+ON stna.staff_id = na.nonac_staff_id
+ORDER BY s.student_id ASC;
+
+CREATE VIEW distance_international_student_view (`Student_ID`, `Name`, `Code`, `Curriculum`, `Date_Of_Birth`, `Street_Address`, `City`, `Postcode`, `Loan_Type`, `Loan_Amount`, `Fees_Paid_TD`, `Country`, `Visa`, `Passport_No`, `Academic_Tutor`, `Pastoral_Tutor`)
+AS
+SELECT s.student_id, CONCAT(s.student_forename, " ", s.student_surname) AS student_name, s.student_code, c.curriculum_title, s.student_dob, s.student_address,
+	   s.student_city, s.student_postcode, l.loan_type, l.loan_amount, s.student_fee_paid_td, i.int_student_country, 
+       i.int_student_visa, i.int_student_passport_no,
+       CONCAT(sta.staff_forename, " ", sta.staff_surname, "(", d.academic_tutor_id, ")") AS academic_tutor_name,
+       CONCAT(stna.staff_forename, " ", stna.staff_surname, "(", d.pastoral_tutor_id, ")") AS pastoral_tutor_name
+FROM student s INNER JOIN curriculum c
+ON s.curriculum_id = c.curriculum_id
+INNER JOIN loan l 
+ON l.loan_id = s.loan_id
+INNER JOIN international_student i
+ON i.int_student_id = s.student_id
+INNER JOIN distance_student d
+ON d.dist_student_id = s.student_id
+INNER JOIN academic_staff a
+ON a.ac_staff_id = d.academic_tutor_id
+INNER JOIN non_academic_staff na
+ON na.nonac_staff_id = d.pastoral_tutor_id
+INNER JOIN staff sta
+ON sta.staff_id = a.ac_staff_id 
+INNER JOIN staff stna
+ON stna.staff_id = na.nonac_staff_id
+ORDER BY s.student_id ASC;
+
+CREATE VIEW programme_view (`Programme_ID`, `Programme_Topic`, `Subject`, `Curriculum`, `Programme_Leader`, `Date and Time`, `Location`)
+AS
+SELECT p.programme_id, u.unit_title, sb.subject_title, c.curriculum_title, CONCAT(s.staff_forename, " ", s.staff_surname, " (", s.staff_id, ")") AS programme_leader,
+	   CONCAT(p.programme_date, " ", p.programme_time) AS date_and_time, p.programme_location
+FROM programme p INNER JOIN academic_staff a
+ON p.programme_leader_id = a.ac_staff_id
+INNER JOIN staff s
+ON s.staff_id = a.ac_staff_id
+INNER JOIN subject_unit u
+ON u.unit_id = p.unit_id
+INNER JOIN curriculum_subject sb
+ON sb.subject_id = u.subject_id
+INNER JOIN curriculum c
+ON c.curriculum_id = sb.curriculum_id
+GROUP BY u.unit_title 
+ORDER BY p.programme_date DESC;	

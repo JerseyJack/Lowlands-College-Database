@@ -1,0 +1,215 @@
+CREATE TABLE manager (  
+	manager_id VARCHAR(7) NOT NULL,     
+	manager_forename VARCHAR(10) NOT NULL,     
+	manager_surname VARCHAR(10) NOT NULL,     
+	PRIMARY KEY (manager_id) 
+);
+
+CREATE TABLE staff (  
+	staff_id VARCHAR(7) NOT NULL,     
+	manager_id VARCHAR(7) NOT NULL,     
+	staff_forename VARCHAR(10) NOT NULL,     
+	staff_surname VARCHAR(10) NOT NULL,     
+	staff_dob DATE NOT NULL,     
+	staff_street_address VARCHAR(30) NOT NULL,     
+	staff_city VARCHAR(20) NOT NULL,     
+	staff_postcode VARCHAR(10) NOT NULL,     
+	staff_email VARCHAR(30) NOT NULL,     
+	staff_tele VARCHAR(20) NOT NULL,    
+	staff_available BOOL NOT NULL,     
+	staff_salary_annum DECIMAL(7,2) NOT NULL,     
+	staff_salary_month DECIMAL(7,2) NOT NULL,     
+	staff_total_pay_td DECIMAL(9,2) NOT NULL,     
+	PRIMARY KEY (staff_id),     
+	CONSTRAINT staff_manager_fk FOREIGN KEY (manager_id) REFERENCES manager(manager_id) 
+);
+
+CREATE TABLE absence (  
+	absence_id VARCHAR(7) NOT NULL,     
+	staff_id VARCHAR(7) NOT NULL,     
+	date_off DATE NOT NULL,     
+	date_return DATE NOT NULL,     
+	total_days INTEGER(5) NOT NULL,     
+	absence_reason VARCHAR(30) NOT NULL,     
+	PRIMARY KEY (absence_id),     
+	CONSTRAINT staff_absence_fk FOREIGN KEY (staff_id) REFERENCES staff(staff_id) 
+);
+
+CREATE TABLE wage (  
+	wage_id VARCHAR(7) NOT NULL,     
+	staff_id VARCHAR(7) NOT NULL,     
+	payment_amount DECIMAL(7,2) NOT NULL,     
+	payment_date DATE NOT NULL,     
+	absence_deduction DECIMAL(7,2) NOT NULL,     
+	tax_deduction DECIMAL(7,2) NOT NULL,
+	meeting_bonus DECIMAL(7,2) NOT NULL,      
+	PRIMARY KEY (wage_id),     
+	CONSTRAINT staff_wage_fk FOREIGN KEY (staff_id) REFERENCES staff(staff_id) 
+);
+
+CREATE TABLE skill (  
+	skill_id VARCHAR(7) NOT NULL,     
+	skill_title VARCHAR(20) NOT NULL,     
+	skill_value DECIMAL(7,2) NOT NULL,     
+	PRIMARY KEY (skill_id) 
+);
+
+CREATE TABLE department (  
+	department_id VARCHAR(7) NOT NULL,     
+	department_title VARCHAR(20) NOT NULL,     
+	department_budget DECIMAL(7,2) NOT NULL,     
+	PRIMARY KEY (department_id) 
+);
+
+CREATE TABLE non_academic_staff (  
+	nonac_staff_id VARCHAR(7) NOT NULL,     
+	department_id VARCHAR(7) NOT NULL,    
+	CONSTRAINT nonac_staff_fk FOREIGN KEY (nonac_staff_id) REFERENCES staff(staff_id),     
+	CONSTRAINT nonac_staff_department_fk FOREIGN KEY (department_id) REFERENCES department(department_id) 
+);
+
+CREATE TABLE skills_held (  
+	skill_id VARCHAR(7) NOT NULL,     
+	nonac_staff_id VARCHAR(7) NOT NULL,     
+	CONSTRAINT nonac_staff_skill_fk FOREIGN KEY (skill_id) REFERENCES skill(skill_id),     
+	CONSTRAINT nonacademic_staff_fk FOREIGN KEY (nonac_staff_id) REFERENCES non_academic_staff(nonac_staff_id) 
+);
+
+CREATE TABLE academic_staff (  
+	ac_staff_id VARCHAR(7) NOT NULL,     
+	teaching_level INTEGER(1) NOT NULL,     
+	CONSTRAINT ac_staff_fk FOREIGN KEY (ac_staff_id) REFERENCES staff(staff_id) 
+);
+
+CREATE TABLE curriculum (  
+	curriculum_id VARCHAR(7) NOT NULL,     
+    	curriculum_leader_id VARCHAR(7) NOT NULL,     
+    	curriculum_title VARCHAR(20) NOT NULL,     
+    	curriculum_start VARCHAR(10) NOT NULL,     
+    	curriculum_end VARCHAR(10) NOT NULL,     
+    	curriculum_level INTEGER(1) NOT NULL,     
+    	curriculum_cost DECIMAL(7,2) NOT NULL, 
+    	PRIMARY KEY (curriculum_id),
+    	CONSTRAINT curriculum_leader_fk FOREIGN KEY (curriculum_leader_id) REFERENCES academic_staff(ac_staff_id) 
+);
+
+
+CREATE TABLE curriculum_subject (
+	subject_id VARCHAR(7) NOT NULL,
+    	subject_leader_id VARCHAR(7) NOT NULL,
+    	curriculum_id VARCHAR(7) NOT NULL,
+    	subject_title VARCHAR(20) NOT NULL,
+    	PRIMARY KEY (subject_id),
+    	CONSTRAINT curriculum_subject_leader_fk FOREIGN KEY (subject_leader_id) REFERENCES academic_staff(ac_staff_id),
+    	CONSTRAINT curriculum_fk FOREIGN KEY (curriculum_id) REFERENCES curriculum(curriculum_id)
+);
+
+CREATE TABLE subject_unit (  
+	unit_id VARCHAR(7) NOT NULL,     
+	subject_id VARCHAR(7) NOT NULL,     
+	unit_title VARCHAR(30) NOT NULL,     
+	PRIMARY KEY (unit_id),     
+    	CONSTRAINT subject_fk FOREIGN KEY (subject_id) REFERENCES curriculum_subject(subject_id) 
+);
+
+CREATE TABLE programme (
+	programme_id VARCHAR(7) NOT NULL,
+    	programme_leader_id VARCHAR(7) NOT NULL,
+    	unit_id VARCHAR(7) NOT NULL,
+    	programme_date DATE NOT NULL,
+    	programme_location VARCHAR(10) NOT NULL,
+	programme_time TIME NOT NULL,
+    	PRIMARY KEY (programme_id),
+    	CONSTRAINT programme_leader_fk FOREIGN KEY (programme_leader_id) REFERENCES academic_staff(ac_staff_id),
+    	CONSTRAINT subject_unit_fk FOREIGN KEY (unit_id) REFERENCES subject_unit(unit_id)
+);
+
+CREATE TABLE loan (
+	loan_id VARCHAR(7) NOT NULL,
+    	loan_type VARCHAR(40) NOT NULL,
+    	loan_amount DECIMAL(7,2) NOT NULL,
+    	PRIMARY KEY (loan_id)
+);
+
+CREATE TABLE student (
+	student_id VARCHAR(7) NOT NULL,
+    	curriculum_id VARCHAR(7) NOT NULL,
+    	loan_id VARCHAR(7) NOT NULL,
+    	student_forename VARCHAR(10) NOT NULL,
+    	student_surname VARCHAR(10) NOT NULL,
+	student_code VARCHAR(10) NOT NULL,
+    	student_dob DATE NOT NULL,
+    	student_address VARCHAR(20) NOT NULL,
+    	student_city VARCHAR(20) NOT NULL,
+    	student_postcode VARCHAR(10) NOT NULL,
+    	student_email VARCHAR(30) NOT NULL,
+    	student_tele VARCHAR(20) NOT NULL,
+    	student_fee_paid_td DECIMAL(7,2) NOT NULL,
+    	PRIMARY KEY (student_id),
+    	CONSTRAINT student_curriculum_fk FOREIGN KEY (curriculum_id) REFERENCES curriculum(curriculum_id),
+    	CONSTRAINT student_loan_fk FOREIGN KEY (loan_id) REFERENCES loan(loan_id),
+	CONSTRAINT limit_student_codes CHECK (student_code = "F" OR student_code = "FI" OR student_code = "D" OR student_code = "DI")
+);
+
+CREATE TABLE attendance (
+	attendance_id VARCHAR(7) NOT NULL,
+    	attending_student_id VARCHAR(7) NOT NULL,
+    	programme_id VARCHAR(7) NOT NULL,
+    	attendance_status VARCHAR(10) NOT NULL,
+    	PRIMARY KEY (attendance_id),
+    	CONSTRAINT student_fk FOREIGN KEY (attending_student_id) REFERENCES student(student_id),
+    	CONSTRAINT programme_fk FOREIGN KEY (programme_id) REFERENCES programme(programme_id)
+);
+
+CREATE TABLE international_student (
+	int_student_id VARCHAR(7) NOT NULL,
+    	int_student_country VARCHAR(20) NOT NULL,
+    	int_student_visa VARCHAR(20) NOT NULL,
+    	int_student_passport_no VARCHAR(20) NOT NULL,
+    	CONSTRAINT int_student_fk FOREIGN KEY (int_student_id) REFERENCES student(student_id)
+);
+
+CREATE TABLE distance_student (
+	dist_student_id VARCHAR(7) NOT NULL,
+    	academic_tutor_id VARCHAR(7) NOT NULL,
+    	pastoral_tutor_id VARCHAR(7) NOT NULL,
+    	CONSTRAINT dist_student_fk FOREIGN KEY (dist_student_id) REFERENCES student(student_id),
+    	CONSTRAINT academic_tutor_fk FOREIGN KEY (academic_tutor_id) REFERENCES academic_staff(ac_staff_id),
+    	CONSTRAINT non_academic_tutor_fk FOREIGN KEY (pastoral_tutor_id) REFERENCES non_academic_staff(nonac_staff_id)
+);
+
+CREATE TABLE meeting (
+	meeting_id VARCHAR(7) NOT NULL,
+    	attending_staff_id VARCHAR(7) NOT NULL,
+    	attending_student_id VARCHAR(7) NOT NULL,
+    	meeting_date DATE NOT NULL,
+    	meeting_topic VARCHAR(20) NOT NULL,
+	meeting_time TIME NOT NULL,
+    	PRIMARY KEY (meeting_id),
+    	CONSTRAINT meeting_staff_fk FOREIGN KEY (attending_staff_id) REFERENCES staff(staff_id),
+    	CONSTRAINT meeting_student_fk FOREIGN KEY (attending_student_id) REFERENCES student(student_id)
+);
+
+CREATE TABLE meeting_notes (
+	notes_id VARCHAR(7) NOT NULL,
+    	meeting_id VARCHAR(7) NOT NULL,
+    	notes_taken TEXT NOT NULL,
+    	PRIMARY KEY (notes_id),
+    	CONSTRAINT meeting_fk FOREIGN KEY (meeting_id) REFERENCES meeting(meeting_id)
+);
+
+CREATE TABLE locker (  
+	locker_id VARCHAR(7) NOT NULL,
+	locker_taken BOOL NOT NULL,        
+	deposit_paid BOOL NOT NULL,    
+	PRIMARY KEY (locker_id) 
+);
+
+CREATE TABLE locker_possession (
+	locker_id VARCHAR(7) NOT NULL,
+    	owner_id VARCHAR(7) NOT NULL,
+    	CONSTRAINT student_locker_fk FOREIGN KEY (locker_id) REFERENCES locker(locker_id),
+    	CONSTRAINT owning_student_fk FOREIGN KEY (owner_id) REFERENCES student(student_id)
+);
+
+

@@ -1,0 +1,134 @@
+[[[[[RABS TRANSACTION THAT APPARENTLY DIDN'T WORK]]]]]
+START TRANSACTION;
+
+SELECT * FROM staff_wage;
+
+SELECT @staff_id_value := "STA00009";
+
+SELECT @month_of_input := DATE '2021-1-9';
+
+SELECT @total_absence_duration := sum(a.duration_of_absence) FROM absence a
+INNER JOIN
+staff_wage sw
+ON 
+sw.staff_id = a.Staff_id
+AND 
+a.staff_id = @staff_id_value 
+AND 
+DATEDIFF(a.date_of_return, @month_of_input) between -15 and 15
+AND 
+a.duration_of_absence > 2;
+
+SELECT @total_meeting_bonus := count(sm.staff_id) FROM student_meeting sm
+INNER JOIN
+staff_wage sw
+ON 
+sw.staff_id = sm.Staff_id
+AND 
+sm.staff_id = @staff_id_value 
+AND 
+DATEDIFF(sm.date_of_meeting, @month_of_input) between -15 and 15;
+
+INSERT INTO staff_wage (staff_id, month, net_month_salary, absence_deduction, tax_for_month, meeting_bonus)
+VALUES (@staff_id_value, @month_of_input, 0, 0, 0, 0);
+
+UPDATE 
+staff_wage AS sw, staff AS s, absence AS a
+SET
+sw.tax_for_month = s.gross_salary_pm * 0.2,
+sw.absence_deduction = @total_absence_duration * round((s.gross_salary_pm * 12) / 365),
+sw.meeting_bonus = (@total_meeting_bonus / 3) * 5
+WHERE
+sw.Staff_id = @staff_id_value
+AND
+s.staff_id = sw.staff_id
+AND
+sw.month = @month_of_input;
+
+UPDATE 
+staff_wage AS sw, staff as s
+SET
+sw.net_month_salary = (s.gross_salary_pm + sw.meeting_bonus) - (sw.absence_deduction + sw.tax_for_month)
+WHERE
+s.staff_id = sw.staff_id
+AND
+sw.Staff_id = @staff_id_value
+AND
+sw.month = @month_of_input;
+
+SELECT * FROM staff_wage WHERE staff_id = @STAFF_ID_VALUE;
+
+ROLLBACK;
+
+[[[MY TRANSACTIONS]]]
+
+##TRANSACTION FOR ADDING NEW STAFF RECORD##
+START TRANSACTION;
+
+INSERT INTO `staff` (`staff_id`,`manager_id`,`staff_forename`,`staff_surname`,`staff_dob`,`staff_street_address`,`staff_city`,`staff_postcode`,`staff_email`,`staff_tele`,`staff_salary_annum`,`staff_salary_month`,`staff_total_pay_td`) VALUES 
+	("ST21","MG1","Barry","Broski","1991-05-04","7 Sample Str.","Milbrooke","MK2 3JL","sample@example.co.uk","+44 2929 3940028",25000,1,0);
+    
+SELECT * FROM staff WHERE staff_id = "ST21";
+
+ROLLBACK;
+
+
+##TRANSACTION FOR ADDING NEW COURSE AND UNIT RECORDS##
+START TRANSACTION;
+
+INSERT INTO `curriculum` (`curriculum_id`,`curriculum_leader_id`,`curriculum_title`,`curriculum_start`,`curriculum_end`,`curriculum_level`,`curriculum_cost`) VALUES 
+	("CR8","ST8","Science","2020-09-08","2022-06-13","4",6000);
+    
+INSERT INTO `curriculum_subject` (`subject_id`,`subject_leader_id`,`curriculum_id`,`subject_title`) VALUES 
+	("SB29","ST8","CR8","Physics");
+    
+INSERT INTO subject_unit (`unit_id`,`subject_id`,`unit_title`) VALUES 
+	("UN85","SB29","Astrology");
+    
+SELECT u.unit_id, u.unit_title, sb.subject_id, sb.subject_title,
+       CONCAT(ss.staff_forename, " ", ss.staff_surname, " (", ss.staff_id, ")") AS subject_teacher,
+       c.curriculum_id, c.curriculum_title, CONCAT(sc.staff_forename, " ", sc.staff_surname, " (", sc.staff_id, ")") AS curriculum_leader
+FROM subject_unit u INNER JOIN curriculum_subject sb
+ON u.subject_id = sb.subject_id
+INNER JOIN curriculum c
+ON sb.curriculum_id = c.curriculum_id
+INNER JOIN academic_staff acs
+ON acs.ac_staff_id = sb.subject_leader_id
+INNER JOIN staff ss
+ON ss.staff_id = acs.ac_staff_id
+INNER JOIN academic_staff acc
+ON acc.ac_staff_id = c.curriculum_leader_id
+INNER JOIN staff sc
+ON sc.staff_id = acc.ac_staff_id
+WHERE c.curriculum_id = "CR8"
+ORDER BY c.curriculum_title ASC;
+
+ROLLBACK; 
+
+
+##TRANSATION FOR CALCULATING THE NUMBER OF AQUIRED SKILLS##
+START TRANSACTION; 
+
+SELECT sk.skill_id, sk.skill_title, COUNT(sh.skill_id) AS total_staff_with_skill
+FROM skills_held sh INNER JOIN skill sk
+ON sh.skill_id = sk.skill_id
+GROUP BY sk.skill_id
+ORDER BY total_staff_with_skill ASC;
+
+ROLLBACK;
+
+
+##TRANSITIONS FOR CALCULATING NUMBER OF APPOINTMENTS ATTENDED BY NON ACADEMIC STAFF
+START TRANSACTION;
+
+SELECT CONCAT(s.staff_forename, " ", s.staff_surname, " (", s.staff_id, ")") AS staff_attending,
+       COUNT(na.nonac_staff_id) AS number_of_appointments
+FROM meeting m INNER JOIN staff s
+ON m.attending_staff_id = s.staff_id
+INNER JOIN non_academic_staff na
+ON na.nonac_staff_id = s.staff_id
+GROUP BY staff_attending
+ORDER BY staff_attending DESC;
+
+ROLLBACK;
+

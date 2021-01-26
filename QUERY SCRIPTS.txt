@@ -1,0 +1,104 @@
+1.
+SELECT u.unit_id, u.unit_title, sb.subject_id, sb.subject_title,
+       CONCAT(ss.staff_forename, " ", ss.staff_surname, " (", ss.staff_id, ")") AS subject_teacher,
+       c.curriculum_id, c.curriculum_title, CONCAT(sc.staff_forename, " ", sc.staff_surname, " (", sc.staff_id, ")") AS curriculum_leader
+FROM subject_unit u INNER JOIN curriculum_subject sb
+ON u.subject_id = sb.subject_id
+INNER JOIN curriculum c
+ON sb.curriculum_id = c.curriculum_id
+INNER JOIN academic_staff acs
+ON acs.ac_staff_id = sb.subject_leader_id
+INNER JOIN staff ss
+ON ss.staff_id = acs.ac_staff_id
+INNER JOIN academic_staff acc
+ON acc.ac_staff_id = c.curriculum_leader_id
+INNER JOIN staff sc
+ON sc.staff_id = acc.ac_staff_id
+ORDER BY c.curriculum_title ASC;
+
+2.
+SELECT * FROM full_time_student_view
+WHERE `Code` = "F";
+
+3.
+SELECT * FROM distance_international_student_view;
+
+4.
+SELECT m.meeting_id, m.meeting_date, CONCAT(s.staff_forename, " ", s.staff_surname, " (", s.staff_id, ")") AS staff_attending,
+       CONCAT(st.student_forename, " ", st.student_surname, " (", st.student_id, ")") AS student_attending, m.meeting_topic, n.notes_taken
+FROM meeting m INNER JOIN staff s
+ON m.attending_staff_id = s.staff_id
+INNER JOIN student st
+ON m.attending_student_id = st.student_id
+INNER JOIN meeting_notes n
+ON n.meeting_id = m.meeting_id
+ORDER BY m.meeting_date DESC;
+
+5.
+SELECT s.staff_id, CONCAT(s.staff_forename, " ", s.staff_surname) AS staff_name, COUNT(a.staff_id) AS absence_count 
+FROM absence a INNER JOIN staff s
+ON a.staff_id = s.staff_id
+GROUP BY s.staff_id
+ORDER BY absence_count DESC;
+
+6.
+SELECT staff_id, CONCAT(staff_forename, " ", staff_surname) AS staff_name, staff_total_pay_td
+FROM staff 
+ORDER BY staff_name ASC;
+
+7.
+SELECT sk.skill_id, sk.skill_title, COUNT(sh.skill_id) AS total_staff_with_skill
+FROM skills_held sh INNER JOIN skill sk
+ON sh.skill_id = sk.skill_id
+GROUP BY sk.skill_id
+ORDER BY total_staff_with_skill ASC;
+
+8.
+SELECT * FROM skill_set_view;
+
+9.
+SELECT st.student_id, CONCAT(st.student_forename, " ", st.student_surname) AS student_name, 
+	   COUNT(att.attendance_status) AS total_lessons_attended 
+FROM student st INNER JOIN attendance att
+ON st.student_id = att.attending_student_id
+WHERE att.attendance_status = "P" OR "L" OR "Q"
+GROUP BY student_name 
+ORDER BY total_lessons_attended DESC; 
+
+10.
+SELECT s.staff_id, CONCAT(s.staff_forename, " ", s.staff_surname) AS staff_name, 
+       mg.manager_id, CONCAT(mg.manager_forename, " ", mg.manager_surname) AS manager_name
+FROM staff s INNER JOIN manager mg
+ON s.manager_id = mg.manager_id
+ORDER BY mg.manager_id ASC;
+
+11.
+SELECT `Student_ID`, `Name`, `Academic_Tutor`, `Pastoral_Tutor`
+FROM distance_student_view
+ORDER BY `Name`;
+
+12.
+SELECT student_id, CONCAT(student_forename, " ", student_surname) AS student_name, student_code
+FROM student 
+ORDER BY student_name;
+
+13.
+SELECT st.student_id, CONCAT(student_forename, " ", student_surname) AS student_name, p.Programme_ID, p.Programme_Topic, p.Programme_Leader, 
+	   p.Date_and_Time, p.Location
+FROM student st INNER JOIN attendance att
+ON st.student_id = att.attending_student_id
+INNER JOIN programme_view p
+ON att.programme_id = p.Programme_id
+ORDER BY student_name ASC;
+
+14.
+SELECT `Staff_ID`, `Name`, `Annual_Salary`, `Monthly_Salary`, `Total_Pay`
+FROM support_staff_view
+ORDER BY `Name` ASC;
+
+15.
+SELECT st.student_id, CONCAT(student_forename, " ", student_surname) AS student_name, st.student_code, l.loan_type, 
+	   CONCAT("£",  l.loan_amount) AS loan_amount, CONCAT("£",  st.student_fee_paid_td) AS fees_paid_to_date
+FROM student st INNER JOIN loan l 
+ON st.loan_id = l.loan_id
+ORDER BY l.loan_type ASC;  

@@ -1,0 +1,161 @@
+!!!!!WHERE YOU PUT NEW REALLY MATTERS!!!!!
+
+# LOCKER TAKEN IS UPDATED WHEN REFERENCED IN POSSESSION
+CREATE TRIGGER locker_availability_update
+	AFTER INSERT 
+	ON locker_possession
+	FOR EACH ROW 
+	UPDATE locker
+	SET locker_taken = 1 WHERE locker.locker_id = NEW.locker_id;
+
+##THE RESET
+DELETE FROM distance_student;
+DELETE FROM international_student; 
+DELETE FROM locker_possession;
+DELETE FROM attendance;
+DELETE FROM meeting_notes;
+DELETE FROM meeting;
+DELETE FROM student;
+
+
+DROP TRIGGER student_loan_update;
+
+DELIMITER |
+
+CREATE TRIGGER student_loan_update
+	BEFORE UPDATE
+	ON student
+	FOR EACH ROW 
+	BEGIN
+    
+		DECLARE student_code VARCHAR(10);
+		SET student_code = (SELECT student_code FROM student LIMIT 1);
+    
+		IF NEW.student_code = "F" THEN
+			SET NEW.loan_id = "LN1";
+		ELSEIF NEW.student_code = "FI" THEN
+			SET NEW.loan_id = "LN2";
+		ELSEIF NEW.student_code = "D" THEN
+			SET NEW.loan_id = "LN3";
+		ELSEIF NEW.student_code = "DI" THEN
+			SET NEW.loan_id = "LN4";
+		END IF;
+	END;
+|
+DELIMITER ;
+
+
+DROP TRIGGER student_loan_insert_update;
+
+DELIMITER |
+
+CREATE TRIGGER student_loan_insert_update
+	BEFORE INSERT
+	ON student
+	FOR EACH ROW 
+	BEGIN
+    
+		DECLARE student_code VARCHAR(10);
+		SET student_code = (SELECT student_code FROM student LIMIT 1);
+    
+		IF NEW.student_code = "F" THEN
+			SET NEW.loan_id = "LN1";
+		ELSEIF NEW.student_code = "FI" THEN
+			SET NEW.loan_id = "LN2";
+		ELSEIF NEW.student_code = "D" THEN
+			SET NEW.loan_id = "LN3";
+		ELSEIF NEW.student_code = "DI" THEN
+			SET NEW.loan_id = "LN4";
+		END IF;
+	END;
+|
+DELIMITER ;
+
+
+DROP TRIGGER total_absence_days_update;
+
+DELIMITER |
+
+CREATE TRIGGER total_absence_days_update
+	BEFORE INSERT
+	ON absence
+	FOR EACH ROW
+	BEGIN 
+		DECLARE date_diff INTEGER(5);
+            	SET date_diff = (SELECT DATEDIFF(NEW.date_return, NEW.date_off));
+            
+            	SET NEW.total_days = date_diff;
+            
+	END;
+|
+DELIMITER ;
+
+
+DROP TRIGGER staff_salary_update
+
+DELIMITER |
+
+CREATE TRIGGER staff_salary_update
+	BEFORE INSERT
+	ON staff
+	FOR EACH ROW
+	BEGIN 
+		DECLARE annual_salary DECIMAL(9,2);
+            	SET annual_salary = (SELECT NEW.staff_salary_annum FROM staff LIMIT 1);
+            
+            	SET NEW.staff_salary_month = annual_salary / 12;
+            
+	END;
+
+|
+DELIMITER ;
+
+
+DROP TRIGGER int_student_desc_code_update;
+
+DELIMITER |
+
+CREATE TRIGGER int_student_desc_code_update 
+	AFTER INSERT
+    ON international_student
+    FOR EACH ROW
+    BEGIN
+		DECLARE student_code VARCHAR(10);
+        
+        SELECT st.student_code
+        INTO student_code 
+        FROM student st 
+        WHERE NEW.int_student_id = st.student_id;
+        
+        UPDATE student 
+		SET st.student_code = (CASE WHEN NEw.int_student_id = st.student_id AND student_code = "F" THEN "FI"
+									WHEN NEw.int_student_id = st.student_id AND student_code = "FI" THEN "DI"
+									ELSE "F"
+							   END);
+    END;
+|
+DELIMITER ;
+
+
+DROP TRIGGER dist_student_desc_code_update;
+
+DELIMITER |
+
+CREATE TRIGGER dist_student_desc_code_update 
+	AFTER INSERT
+    ON distance_student
+    FOR EACH ROW
+    BEGIN
+		DECLARE student_code VARCHAR(10);
+		SET student_code = (SELECT student_code FROM student WHERE student.student_id = NEW.dist_student_id);
+        
+		IF student_code = "F" THEN
+			UPDATE student SET student.student_code = "D" WHERE student.student_id = NEW.dist_student_id;
+		ELSEIF student_code = "FI" THEN
+			UPDATE student SET student.student_code = "DI" WHERE student.student_id = NEW.dist_student_id;
+		ELSE
+			UPDATE student SET student.student_code = "F" WHERE student.student_id = NEW.dist_student_id;
+		END IF;
+    END;
+|
+DELIMITER ;
